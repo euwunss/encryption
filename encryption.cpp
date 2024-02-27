@@ -17,12 +17,14 @@ void getUserMessage(EncryptionParameters &encryption);
 void encryptMessage(EncryptionParameters &encryption, const char *letters);
 void decryptMessage(EncryptionParameters &encryption, const char *letters);
 void convertToUpper(std::string &message);
+void bruteForceMessage(EncryptionParameters &encryption, const char *letters);
 
 int main() {
     const char letters[] = {'A', 'B', 'C', 'D','E', 'F', 'G', 'H','I', 'J', 'K', 'L','M', 'N', 'O', 'P','Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '};
 
     displayMenu();
     EncryptionParameters encryption;
+    std::string tempVal;
 
     switch(getUserChoice()) {
         case 1:
@@ -36,6 +38,10 @@ int main() {
             std::cout << "Decrypted message: " << encryption.userMessage << std::endl;
             break;
         case 3:
+            std::cout << "Enter message: ";
+            getline(std::cin, tempVal);
+            getline(std::cin, encryption.userMessage);
+            bruteForceMessage(encryption, letters);
             break;
         case 4:
             break;
@@ -119,5 +125,32 @@ void decryptMessage(EncryptionParameters &encryption, const char *letters) {
             encryption.userMessage[i] = letters[letterIndex];
             shiftValue = (shiftValue + letterIndex + encryption.userKey) % 27;
         }
+    }
+}
+
+void bruteForceMessage(EncryptionParameters &encryption, const char *letters) {
+    std::string message = encryption.userMessage;
+    int shiftKey = 1;
+    int count = 1;
+
+    while (shiftKey < 27) {
+        // Forward decryption possibilities
+        encryption.userKey = shiftKey;
+        encryption.userDirection = 'f';
+        std::cout << count << "f: ";
+        decryptMessage(encryption, letters);
+        std::cout << encryption.userMessage << std::endl;
+
+        // Backward decryption possibilities
+        encryption.userKey = shiftKey;
+        encryption.userMessage = message;
+        encryption.userDirection = 'b';
+        std::cout << count << "b: ";
+        decryptMessage(encryption, letters);
+        std::cout << encryption.userMessage << std::endl;
+
+        encryption.userMessage = message;
+        shiftKey++;
+        count++;
     }
 }
