@@ -2,6 +2,8 @@
 #include <string>
 #include <cctype>
 #include <algorithm>
+#include <vector>
+#include <sstream>
 
 // Stores all related to cryptography data
 struct EncryptionParameters {
@@ -18,6 +20,8 @@ void encryptMessage(EncryptionParameters &encryption, const char *letters);
 void decryptMessage(EncryptionParameters &encryption, const char *letters);
 void convertToUpper(std::string &message);
 void bruteForceMessage(EncryptionParameters &encryption, const char *letters);
+void breakCode(EncryptionParameters &encryption, const char *letters);
+int findCommonWords(std::string message);
 
 int main() {
     const char letters[] = {'A', 'B', 'C', 'D','E', 'F', 'G', 'H','I', 'J', 'K', 'L','M', 'N', 'O', 'P','Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '};
@@ -44,6 +48,10 @@ int main() {
             bruteForceMessage(encryption, letters);
             break;
         case 4:
+            std::cout << "Enter message: ";
+            getline(std::cin, tempVal);
+            getline(std::cin, encryption.userMessage);
+            breakCode(encryption, letters);
             break;
     }
     
@@ -97,7 +105,7 @@ void encryptMessage(EncryptionParameters &encryption, const char *letters) {
 
     for (int i = 0, len = encryption.userMessage.size(); i < len; i++) {
         if (isalpha(encryption.userMessage[i]) || isspace(encryption.userMessage[i])) {
-            char tmpChar = (isspace(encryption.userMessage[i])) ? (91 - 'A') : encryption.userMessage[i] - 'A';
+            char tmpChar = (isspace(encryption.userMessage[i])) ? 26 : encryption.userMessage[i] - 'A'; // 26 - space value as a letter after Z
             int letterIndex = (tmpChar + shiftValue) % 27;
             encryption.userMessage[i] = letters[letterIndex];
             shiftValue = (shiftValue + tmpChar + encryption.userKey) % 27;
@@ -119,7 +127,7 @@ void decryptMessage(EncryptionParameters &encryption, const char *letters) {
 
     for (int i = 0, len = encryption.userMessage.size(); i < len; i++) {
         if (isalpha(encryption.userMessage[i]) || isspace(encryption.userMessage[i])) {
-            char tmpChar = (isspace(encryption.userMessage[i])) ? (91 - 'A') : encryption.userMessage[i] - 'A';
+            char tmpChar = (isspace(encryption.userMessage[i])) ? 26 : encryption.userMessage[i] - 'A'; // 26 - space value as a letter after Z
             int letterIndex = (tmpChar - shiftValue) % 27;
             letterIndex = (letterIndex < 0) ? (27 + letterIndex) : letterIndex;
             encryption.userMessage[i] = letters[letterIndex];
@@ -153,4 +161,56 @@ void bruteForceMessage(EncryptionParameters &encryption, const char *letters) {
         shiftKey++;
         count++;
     }
+}
+
+void breakCode(EncryptionParameters &encryption, const char *letters) {
+    std::string message = encryption.userMessage;
+    int count = 1;
+    int commonWords = 0;
+    int maxCommonWords = 0;
+    std::string output = "Unable to find a decrypted message.";
+
+    for (int shiftKey = 1; shiftKey < 27; shiftKey++) {
+        // Forward decryption possibilities
+        encryption.userKey = shiftKey;
+        encryption.userDirection = 'f';
+        decryptMessage(encryption, letters);
+        commonWords = findCommonWords(encryption.userMessage);
+        if (commonWords > maxCommonWords) {
+            maxCommonWords = commonWords;
+            output = encryption.userMessage;
+        }
+
+        // Backward decryption possibilities
+        encryption.userKey = shiftKey;
+        encryption.userMessage = message;
+        encryption.userDirection = 'b';
+        decryptMessage(encryption, letters);
+
+        commonWords = findCommonWords(encryption.userMessage);
+        if (commonWords > maxCommonWords) {
+            maxCommonWords = commonWords;
+            output = encryption.userMessage;
+        }
+
+        encryption.userMessage = message;
+        count++;
+    }
+
+    std::cout << output << std::endl;
+}
+
+int findCommonWords(std::string message) {
+    std::stringstream messageStream(message);
+    std::string word;
+    std::vector<std::string> commonWords = {"THE", "BE", "TO", "OF", "AND", "A", "IN", "THAT", "HAVE", "I"};
+    int count = 0;
+
+    while (messageStream >> word) {
+        for (std::string commonWord : commonWords) {
+            count = (commonWord == word) ? ++count : count;
+        }
+    }
+
+    return count;
 }
